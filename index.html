@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Indian Art Through Time — An Interactive Gallery Timeline</title>
+
+<style>
+/* ============================================================
+   FONTS
+   Fraunces  -> display face, carved/inscribed feel for headings
+   Inter     -> body copy, clean and legible
+   IBM Plex Mono -> catalogue numbers, dates, museum-label data
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  /* ---- token system : named palette ---- */
+  --gallery-black : #15130f;   /* wall / page background        */
+  --gallery-black-2: #1c1911;  /* slightly raised panel surface */
+  --sandstone     : #c9a86b;   /* brass plaque / sandstone gold */
+  --sandstone-dim : #8d764d;
+  --oxide         : #a5482f;   /* laterite / terracotta red     */
+  --verdigris     : #5c7266;   /* aged bronze patina green      */
+  --parchment     : #ece4d3;   /* label + panel light tone      */
+  --parchment-dim : #d9cfb8;
+  --ink           : #221e17;   /* dark text on parchment        */
+
+  --display: 'Fraunces', serif;
+  --body:    'Inter', sans-serif;
+  --mono:    'IBM Plex Mono', monospace;
+
+  --radius: 2px;
+}
+
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+
+body{
+  margin:0;
+  background:var(--gallery-black);
+  color:var(--parchment);
+  font-family:var(--body);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* subtle plaster/wall texture so the black doesn't feel flat */
+body::before{
+  content:"";
+  position:fixed; inset:0;
+  pointer-events:none;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(201,168,107,0.05), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(92,114,102,0.05), transparent 45%);
+  z-index:0;
+}
+
+a{ color:var(--sandstone); }
+
+/* respect reduced-motion users */
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+}
+
+/* ============================================================
+   HEADER / HERO
+   ============================================================ */
+header.hero{
+  position:relative;
+  z-index:1;
+  padding: clamp(48px,8vw,96px) 6vw 56px;
+  border-bottom:1px solid rgba(201,168,107,0.25);
+}
+.eyebrow{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  color:var(--sandstone);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:18px;
+}
+.eyebrow::before{
+  content:"";
+  width:26px; height:1px;
+  background:var(--sandstone);
+  display:inline-block;
+}
+h1.title{
+  font-family:var(--display);
+  font-optical-sizing:auto;
+  font-weight:600;
+  font-size:clamp(2.4rem, 6vw, 4.4rem);
+  line-height:1.02;
+  margin:0 0 20px;
+  color:var(--parchment);
+  max-width:14ch;
+}
+h1.title em{
+  font-style:italic;
+  font-weight:500;
+  color:var(--sandstone);
+}
+.hero-sub{
+  max-width:62ch;
+  font-size:clamp(1rem,1.6vw,1.15rem);
+  color:var(--parchment-dim);
+}
+.hero-sub strong{ color:var(--parchment); font-weight:600; }
+
+.hero-meta{
+  margin-top:34px;
+  display:flex;
+  gap:36px;
+  flex-wrap:wrap;
+  font-family:var(--mono);
+  font-size:0.78rem;
+  color:var(--sandstone-dim);
+}
+.hero-meta span b{ color:var(--sandstone); display:block; font-size:0.95rem; margin-bottom:2px; }
+
+/* ============================================================
+   TIMELINE RAIL  — the signature element
+   A gallery "floor path": a horizontal rail of carved-seal
+   medallions, each glowing softly like a spotlighted exhibit.
+   ============================================================ */
+section.timeline-wrap{
+  position:relative; z-index:1;
+  padding: 54px 0 70px;
+}
+.timeline-heading{
+  padding:0 6vw;
+  margin-bottom:34px;
+}
+.timeline-heading h2{
+  font-family:var(--display);
+  font-weight:600;
+  font-size:clamp(1.4rem,2.6vw,1.9rem);
+  margin:0 0 8px;
+  color:var(--parchment);
+}
+.timeline-heading p{
+  margin:0;
+  color:var(--parchment-dim);
+  font-size:0.95rem;
+  max-width:60ch;
+}
+
+.rail-outer{
+  position:relative;
+  overflow-x:auto;
+  overflow-y:visible;
+  padding: 30px 6vw 40px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--sandstone-dim) transparent;
+}
+.rail-outer::-webkit-scrollbar{ height:6px; }
+.rail-outer::-webkit-scrollbar-thumb{ background:var(--sandstone-dim); border-radius:6px; }
+
+.rail{
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  gap: clamp(28px, 4vw, 64px);
+  min-width:max-content;
+}
+/* the connecting line running through every node's center */
+.rail::before{
+  content:"";
+  position:absolute;
+  top:54px; left:0; right:0;
+  height:1px;
+  background:linear-gradient(90deg, transparent, var(--sandstone-dim) 4%, var(--sandstone-dim) 96%, transparent);
+}
+
+.node{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:132px;
+  background:none;
+  border:none;
+  color:inherit;
+  font-family:inherit;
+  cursor:pointer;
+  padding:0;
+  outline-offset:6px;
+}
+.node .medallion{
+  position:relative;
+  width:108px; height:108px;
+  border-radius:50%;
+  border:2px solid var(--sandstone-dim);
+  background:var(--gallery-black-2);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  transition:transform .35s cubic-bezier(.2,.8,.2,1), border-color .35s, box-shadow .35s;
+  box-shadow:0 0 0 0 rgba(201,168,107,0);
+}
+.node .medallion img{
+  width:100%; height:100%;
+  object-fit:cover;
+  filter:grayscale(35%) contrast(1.05) brightness(0.92);
+  transition:filter .35s;
+}
+.node .medallion::after{
+  /* spotlight glow ring */
+  content:"";
+  position:absolute; inset:-14px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(201,168,107,0.35), transparent 68%);
+  opacity:0;
+  transition:opacity .35s;
+}
+.node:hover .medallion,
+.node:focus-visible .medallion{
+  transform:translateY(-6px) scale(1.04);
+  border-color:var(--sandstone);
+  box-shadow:0 14px 26px -12px rgba(0,0,0,0.6);
+}
+.node:hover .medallion img,
+.node:focus-visible .medallion img{ filter:grayscale(0%) contrast(1.05) brightness(1); }
+.node:hover .medallion::after,
+.node:focus-visible .medallion::after{ opacity:1; }
+
+.node .dot-index{
+  position:absolute;
+  bottom:-2px; right:-2px;
+  width:22px; height:22px;
+  border-radius:50%;
+  background:var(--oxide);
+  color:var(--parchment);
+  font-family:var(--mono);
+  font-size:0.68rem;
+  display:flex; align-items:center; justify-content:center;
+  border:2px solid var(--gallery-black);
+  z-index:2;
+}
+
+.node .n-date{
+  margin-top:14px;
+  font-family:var(--mono);
+  font-size:0.72rem;
+  color:var(--sandstone);
+  letter-spacing:0.03em;
+}
+.node .n-period{
+  margin-top:4px;
+  font-size:0.82rem;
+  font-weight:600;
+  color:var(--parchment);
+  text-align:center;
+  line-height:1.25;
+}
+.node .n-name{
+  margin-top:2px;
+  font-size:0.78rem;
+  color:var(--parchment-dim);
+  text-align:center;
+  font-style:italic;
+}
+
+.node[aria-current="true"] .medallion{
+  border-color:var(--oxide);
+  box-shadow:0 0 0 5px rgba(165,72,47,0.18);
+}
+
+/* ---- image fallback placeholders (used only if BOTH the primary
+        and the alternate Commons image fail to load) ---- */
+.img-fallback{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-family:var(--mono);
+  gap:4px;
+  padding:8px;
+}
+.thumb-fallback{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  border-radius:50%;
+  background:radial-gradient(circle, var(--gallery-black-2), #0f0d09);
+  color:var(--sandstone);
+}
+.thumb-fallback .fb-name{ font-size:0.6rem; font-weight:600; color:var(--parchment); line-height:1.15; }
+.thumb-fallback .fb-period{ font-size:0.5rem; color:var(--sandstone-dim); }
+.thumb-fallback .fb-unavailable{ font-size:0.48rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--oxide); }
+
+.modal-fallback{
+  width:100%;
+  min-height:320px;
+  border:2px dashed var(--sandstone-dim);
+  border-radius:4px;
+  background:rgba(201,168,107,0.06);
+  color:var(--sandstone);
+}
+.modal-fallback .fb-name{ font-size:1.1rem; font-weight:600; color:var(--parchment); font-family:var(--display); }
+.modal-fallback .fb-period{ font-size:0.8rem; color:var(--sandstone-dim); }
+.modal-fallback .fb-unavailable{
+  margin-top:6px;
+  font-size:0.68rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--oxide);
+  border-top:1px solid rgba(201,168,107,0.25);
+  padding-top:8px;
+}
+
+/* ============================================================
+   MODAL — styled like a museum wall label / didactic panel
+   ============================================================ */
+.modal-backdrop{
+  position:fixed; inset:0;
+  background:rgba(10,9,6,0.78);
+  backdrop-filter:blur(3px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 4vh 4vw;
+  z-index:50;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .28s ease;
+}
+.modal-backdrop.open{ opacity:1; pointer-events:auto; }
+
+.modal-card{
+  background:var(--parchment);
+  color:var(--ink);
+  width:min(980px, 100%);
+  max-height:92vh;
+  overflow-y:auto;
+  border-radius:var(--radius);
+  display:grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  position:relative;
+  transform:translateY(18px) scale(0.985);
+  opacity:0;
+  transition:transform .35s cubic-bezier(.2,.8,.2,1), opacity .35s ease;
+  box-shadow:0 40px 80px -20px rgba(0,0,0,0.6);
+}
+.modal-backdrop.open .modal-card{ transform:translateY(0) scale(1); opacity:1; }
+
+@media (max-width:760px){
+  .modal-card{ grid-template-columns:1fr; }
+}
+
+.modal-figure{
+  position:relative;
+  background:
+    radial-gradient(ellipse at top, rgba(201,168,107,0.5), transparent 60%),
+    #0f0d09;
+  padding:34px 26px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.modal-figure img{
+  max-width:100%;
+  max-height:52vh;
+  object-fit:contain;
+  box-shadow:0 22px 40px -12px rgba(0,0,0,0.55);
+  border:6px solid #0f0d09;
+}
+.modal-figure .spotlight-caption{
+  position:absolute;
+  bottom:10px; left:0; right:0;
+  text-align:center;
+  font-family:var(--mono);
+  font-size:0.65rem;
+  color:var(--sandstone);
+  letter-spacing:0.04em;
+  padding:0 20px;
+}
+
+.modal-body{
+  padding: 34px 38px 30px;
+}
+.modal-eyebrow{
+  font-family:var(--mono);
+  font-size:0.7rem;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--oxide);
+  margin-bottom:8px;
+}
+.modal-body h3{
+  font-family:var(--display);
+  font-weight:600;
+  font-size:clamp(1.5rem,3vw,2rem);
+  margin:0 0 4px;
+  line-height:1.1;
+}
+.modal-date{
+  font-family:var(--mono);
+  font-size:0.85rem;
+  color:var(--sandstone-dim);
+  margin-bottom:20px;
+}
+
+.label-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px 22px;
+  margin-bottom:22px;
+  padding-bottom:20px;
+  border-bottom:1px solid rgba(34,30,23,0.15);
+}
+@media (max-width:480px){ .label-grid{ grid-template-columns:1fr; } }
+.label-grid .lg-item .lg-k{
+  font-family:var(--mono);
+  font-size:0.65rem;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--verdigris);
+  margin-bottom:3px;
+}
+.label-grid .lg-item .lg-v{
+  font-size:0.9rem;
+  font-weight:500;
+}
+
+.modal-section{ margin-bottom:18px; }
+.modal-section h4{
+  font-family:var(--mono);
+  font-size:0.68rem;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--oxide);
+  margin:0 0 6px;
+}
+.modal-section p{
+  margin:0;
+  font-size:0.93rem;
+  color:#3a3324;
+}
+
+.fun-fact{
+  background:rgba(165,72,47,0.08);
+  border-left:3px solid var(--oxide);
+  padding:12px 16px;
+  border-radius:0 4px 4px 0;
+  font-size:0.9rem;
+  font-style:italic;
+}
+
+/* --- modal footer controls --- */
+.modal-controls{
+  position:sticky;
+  bottom:0;
+  background:var(--parchment);
+  border-top:1px solid rgba(34,30,23,0.15);
+  padding:16px 38px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.ctl-btn{
+  font-family:var(--mono);
+  font-size:0.78rem;
+  letter-spacing:0.04em;
+  background:var(--ink);
+  color:var(--parchment);
+  border:none;
+  padding:10px 16px;
+  border-radius:2px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  transition:background .2s, transform .2s, opacity .2s;
+}
+.ctl-btn:hover:not(:disabled){ background:var(--oxide); transform:translateY(-1px); }
+.ctl-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+.ctl-btn.ghost{
+  background:transparent;
+  color:var(--ink);
+  border:1px solid rgba(34,30,23,0.35);
+}
+.ctl-btn.ghost:hover{ background:rgba(34,30,23,0.06); transform:none; }
+
+.progress-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:var(--mono);
+  font-size:0.72rem;
+  color:var(--verdigris);
+}
+.progress-dots{ display:flex; gap:5px; }
+.progress-dots span{
+  width:6px; height:6px; border-radius:50%;
+  background:rgba(34,30,23,0.2);
+  transition:background .25s, transform .25s;
+}
+.progress-dots span.active{ background:var(--oxide); transform:scale(1.4); }
+
+.close-x{
+  position:absolute;
+  top:14px; right:16px;
+  background:rgba(15,13,9,0.55);
+  color:var(--parchment);
+  border:none;
+  width:34px; height:34px;
+  border-radius:50%;
+  font-size:1.1rem;
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .2s, transform .2s;
+  z-index:2;
+}
+.close-x:hover{ background:var(--oxide); transform:rotate(90deg); }
+
+/* ============================================================
+   SOURCES & REFERENCES
+   ============================================================ */
+footer.sources{
+  position:relative; z-index:1;
+  padding: 56px 6vw 70px;
+  border-top:1px solid rgba(201,168,107,0.25);
+}
+footer.sources h2{
+  font-family:var(--display);
+  font-weight:600;
+  font-size:1.5rem;
+  margin:0 0 22px;
+  color:var(--parchment);
+}
+.sources-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:36px;
+}
+@media (max-width:760px){ .sources-grid{ grid-template-columns:1fr; } }
+.sources-grid h3{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--sandstone);
+  margin:0 0 12px;
+}
+.sources-grid ol, .sources-grid ul{
+  margin:0; padding-left:18px;
+  color:var(--parchment-dim);
+  font-size:0.86rem;
+  line-height:1.7;
+}
+.sources-grid li{ margin-bottom:8px; }
+.sources-note{
+  margin-top:28px;
+  font-size:0.78rem;
+  color:var(--sandstone-dim);
+  max-width:70ch;
+  border-top:1px dashed rgba(201,168,107,0.25);
+  padding-top:18px;
+}
+
+/* keyboard focus visibility (accessibility floor) */
+:focus-visible{
+  outline:2px solid var(--sandstone);
+  outline-offset:3px;
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     HERO / INTRO
+     ============================================================ -->
+<header class="hero">
+  <div class="eyebrow">College Assignment — Art History Exhibition</div>
+  <h1 class="title">Indian Art <em>Through</em> Time</h1>
+  <p class="hero-sub">
+    This gallery walks through roughly <strong>4,700 years</strong> of art from the Indian
+    subcontinent — from a small bronze dancer buried under the ruins of Mohenjo-daro to
+    an oil-painted heroine from a 19th-century Sanskrit drama. Each stop marks a moment
+    when a new material, technique, or belief system reshaped what Indian artists made
+    and why. Click any node on the timeline below to step inside its gallery label.
+  </p>
+  <div class="hero-meta">
+    <span><b>8</b> artifacts</span>
+    <span><b>c. 2500 BCE – 1898 CE</b> span</span>
+    <span><b>7</b> dynasties &amp; periods</span>
+  </div>
+</header>
+
+<!-- ============================================================
+     TIMELINE
+     ============================================================ -->
+<section class="timeline-wrap">
+  <div class="timeline-heading">
+    <h2>The Gallery Path</h2>
+    <p>Scroll sideways to walk the timeline. Each medallion is a cast impression of its
+      artifact — click one to open its full exhibition label.</p>
+  </div>
+  <div class="rail-outer">
+    <div class="rail" id="rail"><!-- nodes injected by JS --></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     MODAL (single reusable panel, content swapped by JS)
+     ============================================================ -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="close-x" id="closeX" aria-label="Back to timeline">✕</button>
+
+    <div class="modal-figure" id="modalFigure">
+      <img id="modalImg" src="" alt="">
+      <div class="spotlight-caption" id="modalCredit"></div>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-eyebrow" id="modalEyebrow"></div>
+      <h3 id="modalTitle"></h3>
+      <div class="modal-date" id="modalDate"></div>
+
+      <div class="label-grid">
+        <div class="lg-item">
+          <div class="lg-k">Location</div>
+          <div class="lg-v" id="modalLocation"></div>
+        </div>
+        <div class="lg-item">
+          <div class="lg-k">Material / Medium</div>
+          <div class="lg-v" id="modalMaterial"></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <h4>Historical Context</h4>
+        <p id="modalContext"></p>
+      </div>
+      <div class="modal-section">
+        <h4>Artistic Characteristics</h4>
+        <p id="modalCharacteristics"></p>
+      </div>
+      <div class="modal-section">
+        <h4>Cultural Significance</h4>
+        <p id="modalSignificance"></p>
+      </div>
+      <div class="modal-section">
+        <h4>Interesting Fact</h4>
+        <p class="fun-fact" id="modalFact"></p>
+      </div>
+    </div>
+
+    <div class="modal-controls">
+      <button class="ctl-btn ghost" id="backToTimeline">↩ Back to Timeline</button>
+      <div class="progress-wrap">
+        <span id="progressLabel">1 / 8</span>
+        <div class="progress-dots" id="progressDots"></div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="ctl-btn" id="prevBtn">← Previous</button>
+        <button class="ctl-btn" id="nextBtn">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SOURCES & REFERENCES
+     ============================================================ -->
+<footer class="sources">
+  <h2>Sources &amp; References</h2>
+  <div class="sources-grid">
+    <div>
+      <h3>Image Credits</h3>
+      <ol id="imageCredits"><!-- injected by JS --></ol>
+    </div>
+    <div>
+      <h3>Further Reading</h3>
+      <ul>
+        <li>Vidya Dehejia, <em>Indian Art</em>, Phaidon Press, 1997.</li>
+        <li>Partha Mitter, <em>Indian Art</em>, Oxford University Press, 2001.</li>
+        <li>John Marshall (ed.), <em>Mohenjo-daro and the Indus Civilization</em>, 1931.</li>
+        <li>Vincent A. Smith, <em>A History of Fine Art in India and Ceylon</em>, Clarendon Press, 1911 (rev. eds.).</li>
+        <li>UNESCO World Heritage Centre, "Buddhist Monuments at Sanchi," whc.unesco.org.</li>
+        <li>Milo C. Beach, <em>Mughal and Rajput Painting</em>, Cambridge University Press, 1992.</li>
+        <li>Rupika Chawla, <em>Raja Ravi Varma: Painter of Colonial India</em>, Mapin Publishing, 2010.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="sources-note">
+    All photographs of physical artifacts and paintings above are historical museum or field
+    photographs sourced from Wikimedia Commons and are in the public domain or released under
+    Creative Commons licenses (see individual credits at left) — no image on this page is an
+    AI-generated reconstruction. Each artifact links to a primary Commons file and, if that
+    file cannot be reached, an alternate Commons photograph of the same object; if both are
+    unreachable (for example on a network that blocks Wikimedia), a labeled placeholder is
+    shown instead of a broken-image icon. Dates for ancient and early medieval objects are
+    approximate and reflect archaeological consensus, which can vary slightly across sources.
+    Built as a single self-contained HTML/CSS/JavaScript file for coursework submission — no
+    backend, database, or build tools required.
+  </p>
+</footer>
+
+<script>
+/* ============================================================
+   DATA
+   One object per artifact — every field the assignment
+   requires is represented, in plain, undergraduate-level prose.
+
+   Images are stored as bare Wikimedia Commons FILE NAMES
+   (never as pre-built URLs). The URL itself is constructed at
+   runtime by commonsUrl() below, which properly percent-encodes
+   parentheses, commas, and apostrophes that appear in several of
+   these real file names — a raw, unencoded URL string is the most
+   common reason a Commons image silently fails to load.
+
+   Each artifact also carries a `fallbackFile`: a second, different,
+   real Commons photograph of the very same object. If the primary
+   file fails to load for any reason (a typo, a renamed file, a
+   network that blocks Wikimedia, etc.), the page automatically
+   retries with this alternate real photograph before ever falling
+   back to the plain text placeholder.
+   ============================================================ */
+const artifacts = [
+  {
+    name: "The Dancing Girl",
+    period: "Indus Valley Civilization",
+    date: "c. 2500 BCE",
+    location: "Mohenjo-daro (Sindh, present-day Pakistan); housed at the National Museum, New Delhi",
+    material: "Bronze, lost-wax (cire perdue) casting",
+    context: "Excavated at Mohenjo-daro in 1926, the figure was cast by Harappan metalworkers who had already mastered lost-wax bronze casting nearly 4,500 years ago — a technically demanding process for a civilization with no known writing that has been deciphered.",
+    characteristics: "A small, 10.5 cm nude female figure stands with one hand on her hip in a relaxed, confident pose, bangles stacked up one arm. The naturalistic modeling of the limbs and casual stance are strikingly different from the rigid, frontal poses typical of most contemporaneous ancient sculpture worldwide.",
+    significance: "It is one of the earliest known bronze sculptures from the subcontinent and offers a rare, intimate glimpse into Harappan body adornment, posture, and possibly performance or ritual, even though its exact original function is still debated by scholars.",
+    fact: "Archaeologist John Marshall, who oversaw the Mohenjo-daro excavations, was reportedly astonished by the figure's naturalism — remarking that nothing quite like her confident pose existed anywhere else in the ancient world at that date.",
+    file: "Dancing Girl of Mohenjo-daro.jpg",
+    fallbackFile: "Dancing Girl - National Museum, New Delhi.jpg",
+    credit: "Photograph by Joe Ravi, Wikimedia Commons, CC BY-SA 3.0 (alternate view: National Museum, New Delhi, via Wikimedia Commons)"
+  },
+  {
+    name: "Lion Capital of Ashoka",
+    period: "Mauryan Empire",
+    date: "c. 250 BCE",
+    location: "Sarnath, Uttar Pradesh; now in the Sarnath Museum",
+    material: "Polished Chunar sandstone",
+    context: "Commissioned by Emperor Ashoka to mark the site of the Buddha's first sermon, the capital once crowned a monolithic pillar inscribed with edicts promoting dharma (moral law) across the Mauryan Empire.",
+    characteristics: "Four addorsed (back-to-back) lions sit atop an abacus decorated with a horse, bull, lion, and elephant separated by dharma wheels, all resting on an inverted lotus. The famous Mauryan polish gives the sandstone an almost glass-like sheen.",
+    significance: "Adopted as India's National Emblem in 1950, the capital symbolizes the spread of Buddhist teaching and imperial authority; its wheel motif appears on the Indian national flag.",
+    fact: "The capital originally supported a large freestanding dharma wheel above the lions that has since broken away — surviving fragments of it can still be seen in the Sarnath site museum today.",
+    file: "Sarnath capital.jpg",
+    fallbackFile: "Ashokan Lion Capital India's National Emblem Sarnath Archeological Museum.jpg",
+    credit: "Photograph, Wikimedia Commons, CC BY-SA 4.0 (alternate view: CC BY-SA 2.0, Sarnath Archaeological Museum)"
+  },
+  {
+    name: "The Great Stupa",
+    period: "Mauryan – Shunga Period",
+    date: "c. 3rd century BCE onward",
+    location: "Sanchi, Madhya Pradesh",
+    material: "Brick core with carved sandstone casing, railings, and gateways (toranas)",
+    context: "Originally built by Ashoka to enshrine relics of the Buddha, the stupa was expanded over several centuries under later dynasties and remained a pilgrimage site until it was rediscovered by a British officer in 1818, overgrown and forgotten.",
+    characteristics: "A hemispherical dome symbolizes the cosmos, topped by a railed harmika and umbrella (chatra). Four elaborately carved gateways depict jataka tales and auspicious motifs — notably without any direct image of the Buddha himself, reflecting an early 'aniconic' phase of Buddhist art.",
+    significance: "It represents the earliest surviving large-scale Buddhist monument in India, and its narrative gateway carvings set the template for centuries of Buddhist relief sculpture across Asia.",
+    fact: "The Buddha never actually visited Sanchi during his lifetime — the site became sacred purely through relic enshrinement and imperial patronage rather than any direct biographical connection.",
+    file: "The Great Stupa at Sanchi.jpg",
+    fallbackFile: "Great Sanchi Stupa.jpg",
+    credit: "Photograph, Wikimedia Commons, CC BY-SA (alternate view: CC BY-SA 4.0)"
+  },
+  {
+    name: "Buddha in Dharmachakra Mudra",
+    period: "Gupta Period",
+    date: "c. 5th century CE",
+    location: "Sarnath, Uttar Pradesh; now in the Sarnath Museum",
+    material: "Chunar sandstone",
+    context: "Carved at Sarnath — the very site of the Buddha's first sermon — this sculpture represents the classical high point of Gupta Buddhist art, blending the sensuous body modeling of the earlier Mathura school with the calm spiritualism native to Sarnath's own workshops.",
+    characteristics: "The seated Buddha performs the dharmachakra mudra, the gesture of 'turning the wheel of the law' that marks his first sermon. His robe clings so closely that almost no folds are visible, letting the smooth body show through; a richly carved halo frames his serene, downcast face.",
+    significance: "This sculpture became the definitive model for depicting the Buddha's first sermon across South and Southeast Asia, and its restrained naturalism defined what art historians now call the 'Sarnath style.'",
+    fact: "The nearly invisible drapery technique is so refined that early European scholars mistakenly debated whether the figure was meant to appear unclothed — the robe is only indicated by the faintest ridges at the hems and collar.",
+    file: "Buddha in Sarnath Museum (Dhammajak Mutra).jpg",
+    fallbackFile: "Sarnath Museum standing Buddha.jpg",
+    credit: "Photograph, Wikimedia Commons (alternate view: Sarnath Museum, GODL-India)"
+  },
+  {
+    name: "Nataraja, Shiva as the Lord of Dance",
+    period: "Chola Dynasty",
+    date: "c. 11th century CE",
+    location: "Tamil Nadu; example shown from the Los Angeles County Museum of Art (LACMA)",
+    material: "Bronze, lost-wax (cire perdue) casting",
+    context: "Produced during the Chola period, a golden age of South Indian temple building and bronze casting, icons like this were made for temple processions and ritual worship, not static display — they were literally carried through the streets.",
+    characteristics: "Shiva dances within a ring of cosmic fire, one foot crushing the dwarf-demon of ignorance (Apasmara). His four hands hold symbols of creation, protection, destruction, and liberation in a composition that balances furious motion with perfect geometric symmetry.",
+    significance: "The Nataraja embodies core Hindu philosophical ideas about the cyclical nature of creation and destruction, and is widely regarded as one of the supreme achievements of world sculpture — its dynamic form later inspired Western artists and thinkers including Auguste Rodin.",
+    fact: "A large Nataraja bronze stands outside CERN in Switzerland, a gift from the Indian government drawing a symbolic parallel between Shiva's cosmic dance and the dynamic patterns of subatomic particle physics.",
+    file: "Shiva as the Lord of Dance LACMA edit.jpg",
+    fallbackFile: "Shiva as the Lord of Dance LACMA.jpg",
+    credit: "Los Angeles County Museum of Art (LACMA), public domain"
+  },
+  {
+    name: "Jahangir Preferring a Sufi Shaikh to Kings",
+    period: "Mughal Period",
+    date: "c. 1615–1618 CE",
+    location: "Painted for the imperial Mughal court; folio now in the Freer Gallery of Art, Smithsonian Institution",
+    material: "Opaque watercolor, gold, and ink on paper",
+    context: "Painted by the Mughal court artist Bichitr for Emperor Jahangir's personal album (muraqqa), during a golden age of manuscript painting when Mughal ateliers were absorbing new ideas about portraiture and perspective from European engravings reaching the court via trade and Jesuit missionaries.",
+    characteristics: "Jahangir sits enthroned atop a giant hourglass, handing a book to a Sufi shaikh while an Ottoman Sultan, King James I of England, and the artist's own tiny self-portrait wait below in a hierarchy of diminishing size. Individualized, closely observed portraiture is fused with symbolic, non-naturalistic composition and lavish gold detailing.",
+    significance: "The painting captures the Mughal court's ideal of kingship — spiritual authority placed visibly above temporal power — and exemplifies how Mughal miniature painting fused Persian, Indian, and emerging European visual ideas into a single sophisticated court style.",
+    fact: "The hourglass throne carries a painted inscription wishing Jahangir a thousand-year reign, while Bichitr's small self-portrait signing his own work at the base is one of the earliest instances of a Mughal painter openly asserting personal authorship of a commissioned court painting.",
+    file: "Bichitr - Jahangir preferring a sufi sheikh to kings.jpg",
+    fallbackFile: "Bichitr - Jahangir Preferring a Sufi Shaikh to Kings, from the St. Petersburg album - Google Art Project.jpg",
+    credit: "Freer Gallery of Art, Smithsonian Institution, public domain (alternate scan: Google Art Project, via Wikimedia Commons)"
+  },
+  {
+    name: "Bani Thani (Radha)",
+    period: "Rajput Period — Kishangarh School",
+    date: "c. 1750 CE",
+    location: "Kishangarh, Rajasthan; now in the National Museum, New Delhi",
+    material: "Opaque watercolor and gold on paper",
+    context: "Painted by court artist Nihal Chand under the patronage of Raja Savant Singh of Kishangarh (reigned 1748–1764), a poet-prince who wrote devotional Krishna poetry under the pen name Nagari Das. Local tradition links the idealized face to Bani Thani, a singer-poet at his court, merged with the image of Radha.",
+    characteristics: "The style is extreme and deliberate stylization rather than naturalism: almond eyes stretch almost to the hairline, eyebrows arch sharply, and the chin and nose are drawn to fine points, all rendered in delicate profile with a diaphanous veil.",
+    significance: "Considered the pinnacle of the Kishangarh school, the painting shows how regional Rajput courts developed their own lyrical, devotionally charged visual language, diverging sharply from Mughal naturalism toward pure idealized beauty.",
+    fact: "The painting is popularly nicknamed the 'Mona Lisa of India' and was featured on an Indian postage stamp issued in 1973.",
+    file: "4 Radha (Bani Thani), Kishangarh, ca. 1750, National Museum New Delhi.jpg",
+    fallbackFile: "Bani Thani painting.jpg",
+    credit: "National Museum, New Delhi, via Wikimedia Commons, public domain"
+  },
+  {
+    name: "Shakuntala",
+    period: "Modern India — Academic Realism",
+    date: "1898 CE",
+    location: "Sree Chitra Art Gallery, Thiruvananthapuram, Kerala",
+    material: "Oil on canvas",
+    context: "Raja Ravi Varma, born into an aristocratic Kerala family, trained in European academic realist technique and became the first major Indian artist to render mythological and literary subjects in oil paint rather than the flat, linear idiom of earlier miniature traditions.",
+    characteristics: "Shakuntala pretends to remove a thorn from her foot while secretly glancing back for a glimpse of her lover Dushyanta, teased by her companions in a lush forest setting rendered with volumetric shading, atmospheric depth, and soft naturalistic light drawn from the Sanskrit drama Abhijnanashakuntalam by Kalidasa.",
+    significance: "Ravi Varma is regarded as a foundational figure of modern Indian art, bridging classical Indian literary themes with Western academic painting technique; his mass-produced oleograph prints later standardized how Hindu deities and epic heroines are still visually imagined today.",
+    fact: "In 1894 Ravi Varma founded his own lithographic press, one of the first mechanized art-reproduction ventures in India — meaning ordinary households across the subcontinent could own an affordable print of his paintings decades before mass media existed.",
+    file: "Raja Ravi Varma - Mahabharata - Shakuntala.jpg",
+    fallbackFile: "Ravi Varma-Shakuntala stops to look back.jpg",
+    credit: "Sree Chitra Art Gallery, via Wikimedia Commons, public domain (alternate version: 1898 study, public domain)"
+  }
+];
+
+/* ============================================================
+   IMAGE URL HELPER
+   Builds a Special:FilePath URL and properly percent-encodes the
+   file name (parentheses, commas, apostrophes, etc.) so unusual
+   but perfectly valid Commons file names resolve correctly.
+   width -> requested thumbnail width in pixels.
+   ============================================================ */
+function commonsUrl(filename, width){
+  return "https://commons.wikimedia.org/wiki/Special:FilePath/" +
+         encodeURIComponent(filename) + "?width=" + width;
+}
+
+/* ============================================================
+   IMAGE FALLBACK CHAIN
+   stage 0 (primary) -> stage 1 (alternate real Commons photo) ->
+   stage 2 (styled text placeholder, never a broken-image icon).
+   Attached as the element's onerror handler.
+   ============================================================ */
+function handleImgError(imgEl, art, isModal){
+  const stage = Number(imgEl.dataset.stage || "0");
+
+  if (stage === 0 && art.fallbackFile){
+    imgEl.dataset.stage = "1";
+    imgEl.src = commonsUrl(art.fallbackFile, isModal ? 900 : 220);
+    return;
+  }
+
+  // both real images failed: swap in a labeled placeholder instead
+  // of letting the browser show a broken-image icon.
+  imgEl.style.display = "none";
+  const parent = imgEl.parentElement;
+  if (parent.querySelector(".img-fallback")) return; // already shown
+
+  const fb = document.createElement("div");
+  fb.className = "img-fallback " + (isModal ? "modal-fallback" : "thumb-fallback");
+  fb.innerHTML =
+    '<span class="fb-name">' + art.name + '</span>' +
+    '<span class="fb-period">' + art.period + '</span>' +
+    '<span class="fb-unavailable">Image unavailable</span>';
+  parent.appendChild(fb);
+}
+
+/* removes any placeholder left over from a previous artifact and
+   restores the <img> to a clean, visible state before a new
+   image attempt begins (used when the modal reloads for a new
+   artifact, since the modal has a single reusable <img> tag). */
+function resetImageState(imgEl){
+  imgEl.dataset.stage = "0";
+  imgEl.style.display = "";
+  const existingFallback = imgEl.parentElement.querySelector(".img-fallback");
+  if (existingFallback) existingFallback.remove();
+}
+
+/* ============================================================
+   RENDER: TIMELINE NODES
+   ============================================================ */
+const rail = document.getElementById('rail');
+
+artifacts.forEach((art, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'node';
+  btn.setAttribute('aria-current', 'false');
+  btn.innerHTML = `
+    <span class="medallion">
+      <img data-stage="0" alt="${art.name}" loading="lazy">
+      <span class="dot-index">${i + 1}</span>
+    </span>
+    <span class="n-date">${art.date}</span>
+    <span class="n-period">${art.period}</span>
+    <span class="n-name">${art.name}</span>
+  `;
+  const thumbImg = btn.querySelector('.medallion img');
+  thumbImg.addEventListener('error', () => handleImgError(thumbImg, art, false));
+  thumbImg.src = commonsUrl(art.file, 220);
+
+  btn.addEventListener('click', () => openModal(i));
+  rail.appendChild(btn);
+});
+
+/* ============================================================
+   RENDER: SOURCES LIST (built from the same data, no duplication)
+   ============================================================ */
+const creditsList = document.getElementById('imageCredits');
+artifacts.forEach(art => {
+  const li = document.createElement('li');
+  li.textContent = `${art.name} — ${art.credit}.`;
+  creditsList.appendChild(li);
+});
+
+/* ============================================================
+   PROGRESS DOTS (built once, updated on navigation)
+   ============================================================ */
+const progressDots = document.getElementById('progressDots');
+artifacts.forEach(() => {
+  const d = document.createElement('span');
+  progressDots.appendChild(d);
+});
+
+/* ============================================================
+   MODAL LOGIC
+   ============================================================ */
+let currentIndex = 0;
+const backdrop   = document.getElementById('modalBackdrop');
+const modalImg   = document.getElementById('modalImg');
+const allNodes   = () => document.querySelectorAll('.node');
+
+// the modal <img> is reused across artifacts, so its error
+// handler is bound once and reads the "current" artifact.
+modalImg.addEventListener('error', () => handleImgError(modalImg, artifacts[currentIndex], true));
+
+function renderModal(i){
+  const art = artifacts[i];
+
+  resetImageState(modalImg);
+  modalImg.alt = art.name;
+  modalImg.src = commonsUrl(art.file, 900);
+
+  document.getElementById('modalCredit').textContent = art.credit;
+  document.getElementById('modalEyebrow').textContent = art.period;
+  document.getElementById('modalTitle').textContent = art.name;
+  document.getElementById('modalDate').textContent = art.date;
+  document.getElementById('modalLocation').textContent = art.location;
+  document.getElementById('modalMaterial').textContent = art.material;
+  document.getElementById('modalContext').textContent = art.context;
+  document.getElementById('modalCharacteristics').textContent = art.characteristics;
+  document.getElementById('modalSignificance').textContent = art.significance;
+  document.getElementById('modalFact').textContent = art.fact;
+
+  document.getElementById('progressLabel').textContent = `${i + 1} / ${artifacts.length}`;
+  document.querySelectorAll('.progress-dots span').forEach((d, idx) => {
+    d.classList.toggle('active', idx === i);
+  });
+
+  document.getElementById('prevBtn').disabled = (i === 0);
+  document.getElementById('nextBtn').disabled = (i === artifacts.length - 1);
+
+  allNodes().forEach((n, idx) => n.setAttribute('aria-current', idx === i ? 'true' : 'false'));
+
+  // scroll modal body back to top on navigation
+  document.querySelector('.modal-card').scrollTop = 0;
+}
+
+function openModal(i){
+  currentIndex = i;
+  renderModal(i);
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(){
+  backdrop.classList.remove('open');
+  document.body.style.overflow = '';
+  // gently scroll the timeline so the just-viewed node stays in view
+  const nodes = allNodes();
+  if (nodes[currentIndex]) {
+    nodes[currentIndex].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    nodes[currentIndex].focus({ preventScroll: true });
+  }
+}
+
+document.getElementById('closeX').addEventListener('click', closeModal);
+document.getElementById('backToTimeline').addEventListener('click', closeModal);
+backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (currentIndex > 0) { currentIndex--; renderModal(currentIndex); }
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if (currentIndex < artifacts.length - 1) { currentIndex++; renderModal(currentIndex); }
+});
+
+/* keyboard support: Esc to close, arrow keys to navigate while open */
+document.addEventListener('keydown', (e) => {
+  if (!backdrop.classList.contains('open')) return;
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'ArrowRight' && currentIndex < artifacts.length - 1) { currentIndex++; renderModal(currentIndex); }
+  if (e.key === 'ArrowLeft' && currentIndex > 0) { currentIndex--; renderModal(currentIndex); }
+});
+</script>
+</body>
+</html>
